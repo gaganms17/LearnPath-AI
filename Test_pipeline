@@ -1,0 +1,24 @@
+import pandas as pd
+from pathlib import Path
+from src.pipeline import load_data, train_segmenter, segment_students, recommend_courses
+
+ROOT = Path(__file__).resolve().parents[1]
+
+def test_data_loads():
+    students, courses = load_data(ROOT/"data/students.csv", ROOT/"data/courses.csv")
+    assert len(students) > 0
+    assert len(courses) > 0
+
+def test_clustering_assigns_segments():
+    students, _ = load_data(ROOT/"data/students.csv", ROOT/"data/courses.csv")
+    model, scaler, features, meta = train_segmenter(students)
+    result = segment_students(students, model, scaler, features)
+    assert "segment" in result
+    assert result["segment"].notna().all()
+    assert 0 <= meta["silhouette_score"] <= 1
+
+def test_recommendations_are_ranked():
+    students, courses = load_data(ROOT/"data/students.csv", ROOT/"data/courses.csv")
+    recs = recommend_courses(students.iloc[0], courses, top_n=4)
+    assert len(recs) == 4
+    assert recs["match_score"].is_monotonic_decreasing
