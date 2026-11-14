@@ -1,0 +1,66 @@
+LearnPath AI 🎓
+AI-powered Student Segmentation & Personalized Course Recommendation
+LearnPath AI is an educational machine-learning portfolio project. It segments learners using K-Means clustering and ranks courses with a transparent hybrid recommendation score.
+Features
+• K-Means clustering on student learning behaviour
+• Student segment profiles and analytics
+• Personalized course ranking using interest, career goal, skill level and course rating
+• Interactive Streamlit dashboard
+• Synthetic sample datasets
+• Automated tests
+Tech stack
+Python · Pandas · NumPy · Scikit-learn · Streamlit · Plotly · Pytest
+Quick start
+1. Clone the repository
+git clone https://github.com/gaganms17/LearnPath-AI.git
+cd LearnPath-AI
+2. Create and activate a virtual environment
+Windows:
+python -m venv .venv
+.venv\Scripts\activate
+macOS/Linux:python3 -m venv .venv
+source .venv/bin/activate
+3. Install dependencies
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+4. Run the dashboard
+streamlit run app.py
+http://localhost:8501/Open the local URL printed in the terminal (usually http://localhost:8501).
+5. Run tests
+pytest -q
+LearnPath-AI/
+├── app.py
+├── data/
+│   ├── students.csv
+│   └── courses.csv
+├── src/
+│   └── pipeline.py
+├── tests/
+│   └── test_pipeline.py
+├── requirements.txt
+├── README.md
+└── .gitignore
+Machine-learning approach
+Student segmentation
+The application standardizes six numerical attributes and applies K-Means with three clusters. Cluster names are assigned from observed engagement profiles so that the arbitrary numeric cluster IDs are not presented as meaningful labels.
+Course recommendation
+A transparent weighted relevance score is calculated:
+• 45% interest/category match
+• 30% career-goal match
+• 15% skill-level suitability
+• 10% course rating
+The score is a heuristic ranking score, not a probability of success or a trained predictive confidence.
+Evaluation
+The About the model page reports the silhouette coefficient for the clustering result. A higher silhouette score generally indicates better-separated clusters, but it should be interpreted alongside the data and domain context.
+Dataset note
+The included student and course records are synthetic examples created for demonstration and testing. Do not treat them as real student records or use this prototype to make high-stakes educational decisions.
+Roadmap
+• Add user authentication and persistent profiles
+• Add implicit-feedback recommendation using course interactions
+• Compare K-Means with hierarchical clustering and DBSCAN
+• Add recommendation evaluation with precision@k / recall@k when interaction labels become available
+• Deploy with Streamlit Community Cloud
+Author
+Gagan M S , NMAMIT , and 9035732827.
+License
+MIT. See LICENSE.
