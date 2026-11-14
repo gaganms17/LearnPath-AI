@@ -1,0 +1,92 @@
+from pathlib import Path
+import sys
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+from src.pipeline import load_data, train_segmenter, recommend_courses, segment_students, segment_summary
+
+st.set_page_config(page_title="LearnPath AI", page_icon="🎓", layout="wide")
+st.title("🎓 LearnPath AI")
+st.caption("AI-powered student segmentation and personalized course recommendations")
+
+@st.cache_data
+def get_data():
+    return load_data(ROOT / "data" / "students.csv", ROOT / "data" / "courses.csv")
+
+students, courses = get_data()
+model, scaler, features, labels = train_segmenter(students)
+segmented = segment_students(students, model, scaler, features)
+summary = segment_summary(segmented)
+
+with st.sidebar:
+    st.header("Explore")
+    page = st.radio("Choose a page", ["Overview", "Student insights", "Course recommendations", "About the model"])
+    st.divider()
+    st.caption("Demo dataset • Synthetic student profiles")
+
+if page == "Overview":
+    c1,c2,c3,c4 = st.columns(4)
+    c1.metric("Students", f"{len(students):,}")
+    c2.metric("Courses", f"{len(courses):,}")
+    c3.metric("Learning segments", segmented["segment"].nunique())
+    c4.metric("Average engagement", f'{students["engagement_score"].mean():.1f}/100')
+    left,right = st.columns(2)
+    with left:
+        st.subheader("Student segment distribution")
+        counts = segmented["segment"].value_counts().rename_axis("Segment").reset_index(name="Students")
+        st.plotly_chart(px.pie(counts, names="Segment", values="Students", hole=.45), use_container_width=True)
+    with right:
+        st.subheader("Average learning profile")
+        st.plotly_chart(px.bar(summary, x="segment", y="engagement_score", color="segment",
+                               labels={"segment":"Segment","engagement_score":"Engagement"}), use_container_width=True)
+    st.subheader("Student data preview")
+    st.dataframe(segmented.head(12), use_container_width=True, hide_index=True)
+
+elif page == "Student insights":
+    st.subheader("Student segmentation")
+    selected = st.selectbox("Select a student", segmented["student_id"].tolist())
+    row = segmented.loc[segmented.student_id == selected].iloc[0]
+    a,b,c = st.columns(3)
+    a.metric("Assigned segment", row["segment"])
+    b.metric("Engagement", f'{row["engagement_score"]:.0f}/100')
+    c.metric("Weekly study hours", f'{row["weekly_study_hours"]:.1f}')
+    st.write("**Profile**")
+    st.json({k: (float(v) if hasattr(v, "item") else v) for k,v in row.to_dict().items()})
+    st.subheader("Segment characteristics")
+    st.dataframe(summary, use_container_width=True, hide_index=True)
+
+elif page == "Course recommendations":
+    st.subheader("Personalized course discovery")
+    student_id = st.selectbox("Choose a student profile", students["student_id"].tolist())
+    student = students.loc[students.student_id == student_id].iloc[0]
+    st.info(f"Student interest: **{student['interest']}** · Current level: **{student['skill_level']}** · Goal: **{student['career_goal']}**")
+    recs = recommend_courses(student, courses, top_n=6)
+    for _, rec in recs.iterrows():
+        with st.container(border=True):
+            st.markdown(f"### {rec['course_name']}")
+            st.write(f"{rec['category']} · {rec['level']} · {rec['duration_hours']} hours")
+            st.progress(float(rec["match_score"])/100, text=f"Match score: {rec['match_score']:.0f}/100")
+            st.caption(rec["description"])
+
+else:
+    st.subheader("How LearnPath AI works")
+    st.markdown("""
+    1. **Data preparation:** validates and prepares student learning profiles.
+    2. **Feature scaling:** standardizes numerical learning attributes.
+    3. **K-Means clustering:** discovers groups of students with similar learning patterns.
+    4. **Recommendation engine:** ranks courses using interest, skill-level, career-goal and rating signals.
+    5. **Evaluation:** reports silhouette score for the clustering model.
+
+    **Important:** This is a learning and portfolio demonstration. The sample data is synthetic;
+    recommendations are decision-support suggestions, not guarantees of educational outcomes.
+    """)
+    st.metric("K-Means silhouette score", f"{labels['silhouette_score']:.3f}")
+    st.write("Features used:", ", ".join(features))
+    st.write("Cluster summary")
+    st.dataframe(summary, use_container_width=True, hide_index=True)
+
+st.divider()
+st.caption("LearnPath AI • Built with Python, Streamlit and scikit-learn")
