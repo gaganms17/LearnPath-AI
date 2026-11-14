@@ -1,0 +1,7 @@
+Contributing
+Fork the repository.
+Create a feature branch: git checkout -b feature/your-feature.
+Install dependencies with pip install -r requirements.txt.
+Run tests with pytest -q.
+Commit focused changes and open a pull request.
+Please do not commit private student data, credentials, or API keys.
